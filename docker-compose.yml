@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend # Path to the directory containing the Dockerfile
+      dockerfile: Dockerfile
+    container_name: movie_backend_service
+    ports:
+      - "${API_PORT:-8000}:${API_PORT:-8000}" # Maps host port to container port, uses .env or default
+    volumes:
+      - ./backend/app:/app/backend/app # Mount local app code for live reload during development
+      # The .env file is automatically sourced by docker-compose if it's in the same dir
+      # Or you can specify it explicitly if it's elsewhere:
+    env_file:
+      - ./.env
+    depends_on:
+      db_postgres: # Ensures database is started before the backend
+        condition: service_healthy # Waits for db to be healthy
+      # Optional: If you want backend to wait for populator to finish (might not be necessary)
+      populate_db_service:
+        condition: service_completed_successfully
+    networks:
+      - movie_network
+
+  db_postgres:
+    image: pgvector/pgvector:pg16 # Official pgvector image (Postgres 16 with pgvector)
+    # Or use ankane/pgvector:v0.5.1-pg16 if you prefer
+    container_name: movie_db_postgres_service
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5433:5432" # Map host port 5433 to container port 5432 (to avoid conflicts with local PG)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persist database data
+      - ./init-db:/docker-entrypoint-initdb.d # Run initialization scripts
+    healthcheck: # Checks if PostgreSQL is ready to accept connections
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - movie_network
+
+  populate_db_service:
+    build:
+      context: ./data_ingestion # Context is the data_ingestion directory
+      dockerfile: Dockerfile.populate # Specify the Dockerfile name
+    container_name: movie_populate_db
+    env_file:
+      - ./.env # To get POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+    environment:
+      DB_HOST: db_postgres # Connect to the db_postgres service name
+      DB_PORT: 5432        # Internal Docker network port for PostgreSQL
+      # Ensure python can find .env if populate_db.py tries to load it
+      # For Dockerfile.populate, .env is not directly copied, so env vars are primary
+      PYTHONUNBUFFERED: 1 # To see print statements immediately
+    depends_on:
+      db_postgres:
+        condition: service_healthy # Crucial: wait for DB to be ready
+    command: >
+      bash -c "
+        echo 'Waiting a few seconds for DB to fully initialize after healthcheck...' &&
+        sleep 5 &&
+        echo 'Running populate_db.py script...' &&
+        python populate_db.py &&
+        echo 'populate_db.py script finished.'
+      "
+    # No ports needed as this is a batch job
+    # No volumes needed for the script itself beyond what's copied in Dockerfile,
+    # unless your populate_db.py reads from external files you want to mount.
+    networks:
+      - movie_network
+    # This service will run its command and then exit.
+    # If you want it to truly be "one-shot" and not restart,
+    # you might need to use `profiles` or manage it with `docker-compose run`.
+    # For `docker-compose up`, an exited service is fine.
+    # To prevent restarts on failure for this specific job:
+    restart: "no"
+
+volumes:
+  postgres_data: # Defines a named volume for data persistence
+
+networks:
+  movie_network:
+    driver: bridge

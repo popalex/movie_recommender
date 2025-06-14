@@ -1,0 +1,17 @@
+# movie_recommender/data_ingestion/Dockerfile.populate
+
+FROM python:3.13-slim
+
+WORKDIR /app/data_ingestion
+
+# Copy requirements specific to data ingestion (or use a shared one)
+# For simplicity, let's create a minimal one here, or you can copy from backend
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the script
+COPY populate_db.py .
+
+# The CMD will be specified in docker-compose.yml to allow environment variable overrides
+# and ensure it runs after the DB is ready.
+# We don't need an EXPOSE or a long-running CMD here as it's a one-off script.

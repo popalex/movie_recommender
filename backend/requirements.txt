@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+psycopg2-binary
+numpy
+python-dotenv
+# sentence-transformers # Add if you generate embeddings within the API, otherwise keep it for data_ingestion
