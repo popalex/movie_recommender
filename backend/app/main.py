@@ -69,8 +69,13 @@ async def startup_event():
 
 @app.post("/recommend")
 async def recommend_movies(titles: list[str]):
+    # Validate input length
     if len(titles) != 3:
         raise HTTPException(status_code=400, detail="Please provide exactly 3 movie/TV titles.")
+    # Validate that no title is empty or blank
+    for title in titles:
+        if not isinstance(title, str) or not title.strip():
+            raise HTTPException(status_code=400, detail="Input titles must be non-empty strings")
 
     conn = get_db_connection()
     cursor = conn.cursor()

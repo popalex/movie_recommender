@@ -193,3 +193,32 @@ async def test_database_connection_error_scenario(mock_psycopg2_connect_call, cl
 
     # Assert that psycopg2.connect was actually called
     mock_psycopg2_connect_call.assert_called_once()
+
+async def test_recommend_movies_duplicate_titles(client: AsyncClient, mock_db_connection):
+    """Test recommendation fails or handles duplicate input titles."""
+    mock_get_conn, mock_cursor = mock_db_connection
+    input_titles = ["Inception", "Inception", "Interstellar"]
+
+    # Simulate fetchone returning valid results for both "Inception" and "Interstellar"
+    mock_cursor.fetchone.side_effect = [
+        (1, [0.1, 0.2]),  # Inception
+        (1, [0.1, 0.2]),  # Inception again
+        (2, [0.3, 0.4]),  # Interstellar
+    ]
+    mock_cursor.fetchall.return_value = SAMPLE_RECOMMENDATION_DETAILS[:3]
+
+    response = await client.post("/recommend", json=input_titles)
+    # Depending on your logic, this could be 400 or 200. Adjust as needed.
+    assert response.status_code in (200, 400)
+
+async def test_recommend_movies_empty_title(client: AsyncClient, mock_db_connection):
+    """Test recommendation fails if an input title is empty or blank."""
+    input_titles = ["Inception", "", "Interstellar"]
+    response = await client.post("/recommend", json=input_titles)
+    assert response.status_code == 400 or response.status_code == 422
+
+async def test_recommend_movies_non_string_titles(client: AsyncClient):
+    """Test recommendation fails if input contains non-string values."""
+    input_titles = ["Inception", 123, None]
+    response = await client.post("/recommend", json=input_titles)
+    assert response.status_code == 422
