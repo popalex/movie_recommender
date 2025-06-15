@@ -22,9 +22,12 @@ const RecommendationsDisplay = ({ recommendations, title, isLoading }) => {
   if (isLoading) {
     return (
       <div className="text-center py-10">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto"></div>
-        <p className="mt-2 text-slate-600">Fetching recommendations...</p>
-      </div>
+      <div 
+        data-testid="loading-spinner" // Add this
+        className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto"
+      ></div>
+      <p className="mt-2 text-slate-600">Fetching recommendations...</p>
+    </div>
     );
   }
 
