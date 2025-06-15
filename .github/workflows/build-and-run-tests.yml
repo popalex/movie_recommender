@@ -26,7 +26,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.9, 3.11, 3.12, 3.13]
+        python-version: [3.11, 3.12, 3.13]
 
     steps:
     - uses: actions/checkout@v4
@@ -39,7 +39,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r backend/requirements.txt
     - name: Create .env file
-      run: cp backend/.env.sample backend/.env
+      run: cp .env.sample .env
     # - name: Run Tests
     #   run: |
     #     pytest -v
