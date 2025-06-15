@@ -21,7 +21,7 @@ jobs:
     - name: Build Docker image for data_ingestion
       run: docker build -t fad data_ingestion -f data_ingestion/Dockerfile.populate
 
-  build:
+  build_python:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 4
@@ -67,3 +67,24 @@ jobs:
 
         # (Optional) Title of the test results section in the workflow summary
         title: Test results
+
+  build_nodejs:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        node-version: ['18.x', '20.x']
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: cd frontend
+    - name: Install packages
+      run: npm ci
+    - name: Run Build
+      run: npm run build --if-present
+    - name: Run Tests
+      run: npm test
