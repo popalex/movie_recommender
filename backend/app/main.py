@@ -5,6 +5,7 @@ import numpy as np
 import os
 import random
 from dotenv import load_dotenv
+from pgvector.psycopg2 import register_vector # Import the registration function
 
 # Load environment variables from .env file
 load_dotenv(dotenv_path="../../.env") # Adjust path if .env is elsewhere relative to main.py
@@ -16,12 +17,14 @@ app = FastAPI()
 origins = [
     "http://localhost:3000", # Default React dev port
     "http://127.0.0.1:3000",
+    "http://localhost:5173", # React Vite dev port
     # Add your deployed frontend URL here later
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    # allow_origins=origins,
+    allow_origins=["*"],       # TEMPORARY DEBUG: DO NOT USE IN PROD !!!
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,6 +48,7 @@ def get_db_connection():
             user=DB_USER,
             password=DB_PASSWORD
         )
+        register_vector(conn)
         return conn
     except psycopg2.OperationalError as e:
         print(f"Error connecting to database: {e}")
