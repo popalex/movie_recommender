@@ -1,6 +1,9 @@
-fastapi
-uvicorn[standard]
-psycopg2-binary
-numpy
-python-dotenv
+fastapi==0.115.12
+uvicorn[standard]==0.34.3
+psycopg2-binary==2.9.10
+numpy==2.2.4
+python-dotenv==1.1.0
 # sentence-transformers # Add if you generate embeddings within the API, otherwise keep it for data_ingestion
+pytest==8.4.0
+httpx==0.28.1
+pytest-asyncio==1.0.0 # For testing async FastAPI endpoints
